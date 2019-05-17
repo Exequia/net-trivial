@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.WebSockets;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -9,6 +11,7 @@ using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using trivial.Services;
 
 namespace trivial
 {
@@ -31,6 +34,8 @@ namespace trivial
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
+            // configure DI for application services
+            services.AddScoped<ITestService, TestService>();
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
         }
@@ -50,14 +55,39 @@ namespace trivial
             }
 
             #region WebSocketConfig
-            //https://docs.microsoft.com/es-es/aspnet/core/fundamentals/websockets?view=aspnetcore-2.2
+            ////https://docs.microsoft.com/es-es/aspnet/core/fundamentals/websockets?view=aspnetcore-2.2
             var webSocketOptions = new WebSocketOptions()
             {
                 KeepAliveInterval = TimeSpan.FromSeconds(120),
                 ReceiveBufferSize = 4 * 1024
             };
+            webSocketOptions.AllowedOrigins.Add("*");
 
             app.UseWebSockets(webSocketOptions);
+            /////TODO, https://radu-matei.com/blog/aspnet-core-websockets-middleware/
+            //app.Use(async (context, next) =>
+            //{
+            //    if (context.Request.Path == "/ws")
+            //    {
+            //        if (context.WebSockets.IsWebSocketRequest)
+            //        {
+            //            WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
+            //            await Echo(context, webSocket);
+            //        }
+            //        else
+            //        {
+            //            context.Response.StatusCode = 400;
+            //        }
+            //    }
+            //    {
+            //        await next();
+            //    }
+
+            //});
+
+            //https://gunnarpeipman.com/aspnet/aspnet-core-websocket-chat/
+            //app.UseWebSockets();
+            app.UseMiddleware<SocketMiddleware>();
             #endregion
 
             app.UseHttpsRedirection();
@@ -71,5 +101,17 @@ namespace trivial
                     template: "{controller=Home}/{action=Index}/{id?}");
             });
         }
+        //private async Task Echo(HttpContext context, WebSocket webSocket)
+        //{
+        //    var buffer = new byte[1024 * 4];
+        //    WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+        //    while (!result.CloseStatus.HasValue)
+        //    {
+        //        await webSocket.SendAsync(new ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None);
+
+        //        result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+        //    }
+        //    await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
+        //}
     }
 }
