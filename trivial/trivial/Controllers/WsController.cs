@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using trivial.Services;
@@ -10,6 +11,10 @@ using trivial.Services;
 
 namespace trivial.Controllers
 {
+    [EnableCors("AllowAll")]
+    [Produces("application/json")]
+    [Route("api/[controller]")]
+    [ApiController]
     public class WsController : Controller
     {
 
@@ -20,10 +25,32 @@ namespace trivial.Controllers
         //    _testService = testService;
         //}
 
-        // GET: Ws
-        //public ActionResult Index()
+        //GET: Ws
+        [HttpGet("test")]
+        public ActionResult<string> Test()
+        {
+            return Ok("esto no es un web socket");
+        }
+
+
+        //[HttpGet("getRootNode")]
+        //public ActionResult<ResourcesView> GetRootNode()
         //{
-        //    return View();
+        //    Log.Debug("ResourcesController.GetRootNode -> Start");
+        //    try
+        //    {
+        //        ResourcesView rootView = _resourceService.GetRootNode();
+        //        return Ok(rootView);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log.Error(ex, "Error on ResourcesController.GetRootNode: {0}", ex.Message);
+        //        return StatusCode((int)HttpStatusCode.InternalServerError);
+        //    }
+        //    finally
+        //    {
+        //        Log.Debug("ResourcesController.GetRootNode -> End");
+        //    }
         //}
 
         //// GET: Ws/Details/5

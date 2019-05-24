@@ -114,4 +114,122 @@ namespace trivial
         //    await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
         //}
     }
+
+
+    /*
+     * 
+    public class Startup
+    {
+        public Startup(IConfiguration configuration)
+        {
+            Configuration = configuration;
+        }
+
+        public IConfiguration Configuration { get; }
+
+        // This method gets called by the runtime. Use this method to add services to the container.
+        public void ConfigureServices(IServiceCollection services)
+        {
+            services.Configure<MvcOptions>(options =>
+            {
+                options.Filters.Add(new CorsAuthorizationFilterFactory("AllowAll"));
+            });
+            services.AddCors(o => o.AddPolicy("AllowAll", builder =>
+            {
+                builder.AllowAnyOrigin()
+                       .AllowAnyMethod()
+                       .AllowAnyHeader()
+                       .AllowCredentials()
+                       .WithOrigins("*")
+                       .SetPreflightMaxAge(TimeSpan.FromSeconds(2520));
+            }));
+
+            services
+                .AddMvc()
+                .AddJsonOptions(options =>
+                {
+                    options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+                    options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+                });
+
+            #region Get configurations, set for DI
+
+            var appSettingsSection = Configuration.GetSection("AppSettings");
+            services.Configure<AppSettings>(appSettingsSection);
+            var altrixSettingsSection = Configuration.GetSection("AltrixSettings");
+            services.Configure<AltrixSettings>(altrixSettingsSection);
+            var OPCConfigSection = Configuration.GetSection("OPCConfig");
+            services.Configure<OPCConfig>(OPCConfigSection);
+
+            #endregion
+
+            // configure jwt authentication
+            var appSettings = appSettingsSection.Get<AppSettings>();
+            var key = Encoding.ASCII.GetBytes(appSettings.Secret);
+            services.AddAuthentication(x =>
+            {
+                x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(x =>
+            {
+                x.RequireHttpsMetadata = false;
+                x.SaveToken = true;
+                x.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = false,
+                    ValidateAudience = false
+                };
+            });
+
+            // configure DI for application services
+            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IProjectService, ProjectService>();
+            services.AddScoped<ITaskService, TaskService>();
+            services.AddScoped<IWorkLogService, WorkLogService>();
+            services.AddScoped<IProductService, ProductService>();
+            services.AddScoped<IStockService, StockService>();
+            services.AddScoped<IZonesService, ZonesService>();
+            services.AddScoped<IResourcesService, ResourcesService>();
+            services.AddScoped<IServicesService, ServicesService>();
+            services.AddScoped<ISacksService, SacksService>();
+            services.AddScoped<ISeriesService, SeriesService>();
+            services.AddScoped<IContainerService, ContainerService>();
+            services.AddSingleton<IAltrixContextService, AltrixContextService>();
+
+            if (appSettingsSection.Get<AppSettings>().UseOPC)
+                services.AddSingleton<IOPCService, OPCService>();
+        }
+
+        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        {
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+            else
+            {
+                app.UseHsts();
+            }
+            app.UseCors("AllowAll");
+            app.UseAuthentication();
+            app.UseHttpsRedirection();
+            app.UseStaticFiles(
+                  new StaticFileOptions
+                  {
+                      OnPrepareResponse = context =>
+                      {
+                          context.Context.Response.Headers.Add("Cache-Control", "no-cache, no-store");
+                          context.Context.Response.Headers.Add("Expires", "-1");
+                      }
+                  }
+            );
+            app.UseMvc();       
+        }
+    }
+}
+     * */
 }
