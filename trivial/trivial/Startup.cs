@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using trivial.Services;
+using trivial.Services.Interfaces;
 
 namespace trivial
 {
@@ -35,7 +36,7 @@ namespace trivial
             });
 
             // configure DI for application services
-            services.AddScoped<ITestService, TestService>();
+            services.AddScoped<IGameService, GameService>();
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
         }
@@ -49,7 +50,7 @@ namespace trivial
             }
             else
             {
-                app.UseExceptionHandler("/Home/Error");
+                //app.UseExceptionHandler("/Home/Error");
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
@@ -87,19 +88,21 @@ namespace trivial
 
             //https://gunnarpeipman.com/aspnet/aspnet-core-websocket-chat/
             //app.UseWebSockets();
-            app.UseMiddleware<SocketMiddleware>();
+            //app.UseMiddleware<SocketMiddleware>();
+            app.UseMiddleware<GameSocketMiddleware>();
             #endregion
 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseCookiePolicy();
 
-            app.UseMvc(routes =>
-            {
-                routes.MapRoute(
-                    name: "default",
-                    template: "{controller=Home}/{action=Index}/{id?}");
-            });
+            //app.UseMvc(routes =>
+            //{
+            //    routes.MapRoute(
+            //        name: "default",
+            //        template: "{controller=Home}/{action=Index}/{id?}");
+            //});
+            app.UseMvc();
         }
         //private async Task Echo(HttpContext context, WebSocket webSocket)
         //{
