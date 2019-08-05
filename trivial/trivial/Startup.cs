@@ -1,15 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.WebSockets;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,6 +35,8 @@ namespace trivial
 
             // configure DI for application services
             services.AddScoped<IGameService, GameService>();
+            services.AddScoped<IUserService, UserService>();
+            //services.AddSingleton<IAltrixContextService, AltrixContextService>();
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
@@ -67,10 +63,6 @@ namespace trivial
                     ValidateAudience = false
                 };
             });
-
-            // configure DI for application services
-            //services.AddScoped<IUserService, UserService>();
-            //services.AddScoped<IProjectService, ProjectService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

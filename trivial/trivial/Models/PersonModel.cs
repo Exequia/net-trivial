@@ -10,6 +10,7 @@ namespace trivial.Models
         public string Name { get; set; }
         public string FisrtSurname { get; set; }
         public string SecondSurname { get; set; }
+        public string ContactEmail { get; set; }
         public EnumSex Sex { get; set; }
     }
 }
