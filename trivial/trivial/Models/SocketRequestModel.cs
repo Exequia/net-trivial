@@ -5,8 +5,9 @@ using System.Threading.Tasks;
 
 namespace trivial.Models
 {
-    public class PlayerModel : PersonModel
+    public class SocketRequestModel
     {
-        public string Id { get; set; }
+        public EnumGameStage Stage { get; set; }
+        public Object Data { get; set; }
     }
 }

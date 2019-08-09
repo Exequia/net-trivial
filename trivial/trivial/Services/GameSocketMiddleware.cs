@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -9,6 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using trivial.Models;
+using Log = Serilog.Log;
 
 namespace trivial.Services
 {
@@ -18,61 +21,83 @@ namespace trivial.Services
 
         private readonly RequestDelegate _next;
 
-        private List<PlayerModel> _players;
+        private GameModel _game;
+
 
         public GameSocketMiddleware(RequestDelegate next)
         {
             _next = next;
+            _game = new GameModel();
         }
 
         public async Task Invoke(HttpContext context)
         {
-            if (!context.WebSockets.IsWebSocketRequest)
+            Log.Debug("GameSocketMiddleware.Invoke -> new entry");
+            Log.Debug("Params -> context: {@context}", context);
+
+            try
             {
-                await _next.Invoke(context);
-                return;
-            }
-
-            CancellationToken ct = context.RequestAborted;
-            WebSocket currentSocket = await context.WebSockets.AcceptWebSocketAsync();
-            var socketId = Guid.NewGuid().ToString();
-
-            _sockets.TryAdd(socketId, currentSocket);
-
-            while (true)
-            {
-                if (ct.IsCancellationRequested)
+                if (!context.WebSockets.IsWebSocketRequest)
                 {
-                    break;
+                    await _next.Invoke(context);
+                    return;
                 }
 
-                var response = await ReceiveStringAsync(currentSocket, ct);
-                if (string.IsNullOrEmpty(response))
+                CancellationToken ct = context.RequestAborted;
+                WebSocket currentSocket = await context.WebSockets.AcceptWebSocketAsync();
+                var socketId = Guid.NewGuid().ToString();
+
+                _sockets.TryAdd(socketId, currentSocket);
+
+                while (true)
                 {
-                    if (currentSocket.State != WebSocketState.Open)
+                    if (ct.IsCancellationRequested)
                     {
                         break;
                     }
 
-                    continue;
-                }
+                    var response = await ReceiveStringAsync(currentSocket, ct);
 
-                foreach (var socket in _sockets)
-                {
-                    if (socket.Value.State != WebSocketState.Open)
+                    //if (string.IsNullOrEmpty(response))
+                    //{
+                    //    if (currentSocket.State != WebSocketState.Open)
+                    //    {
+                    //        break;
+                    //    }
+
+                    //    continue;
+                    //}
+
+                    if (!string.IsNullOrEmpty(response))
+                        ManageResponse(response);
+
+                    foreach (var socket in _sockets)
                     {
-                        continue;
+                        if (socket.Value.State != WebSocketState.Open)
+                        {
+                            continue;
+                        }
+
+                        var serializerSettings = new JsonSerializerSettings();
+                        serializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+                        string gameJson = JsonConvert.SerializeObject(this._game, serializerSettings);
+                        await SendStringAsync(socket.Value, gameJson, ct);
                     }
-
-                    await SendStringAsync(socket.Value, response, ct);
                 }
+
+                WebSocket dummy;
+                _sockets.TryRemove(socketId, out dummy);
+
+                await currentSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", ct);
+                currentSocket.Dispose();
+
+            } catch (Exception ex) {
+                Log.Error(ex, "GameSocketMiddleware.Invoke->",  ex.Message);
             }
-
-            WebSocket dummy;
-            _sockets.TryRemove(socketId, out dummy);
-
-            await currentSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", ct);
-            currentSocket.Dispose();
+            finally
+            {
+                Log.Debug("GameSocketMiddleware.Invoke -> End entry");
+            }
         }
 
         private static Task SendStringAsync(WebSocket socket, string data, CancellationToken ct = default(CancellationToken))
@@ -108,6 +133,29 @@ namespace trivial.Services
                 {
                     return await reader.ReadToEndAsync();
                 }
+            }
+        }
+
+        private void ManageResponse(string response)
+        {
+            SocketRequestModel socketRequest = JsonConvert.DeserializeObject<SocketRequestModel>(response);
+
+            switch (socketRequest.Stage)
+            {
+                case (EnumGameStage.Config):
+                    this._game.Stage = socketRequest.Stage;
+                    this._game.Options = JsonConvert.DeserializeObject<GameOptionsModel>(socketRequest.Data.ToString());
+                    break;
+
+                case (EnumGameStage.Players):
+                    this._game.Stage = socketRequest.Stage;
+                    PlayerModel player = JsonConvert.DeserializeObject<PlayerModel>(socketRequest.Data.ToString());
+                    this._game.Players.Add(player);
+                    break;
+
+                case (EnumGameStage.Start):
+                    this._game.Stage = socketRequest.Stage;
+                    break;
             }
         }
     }
