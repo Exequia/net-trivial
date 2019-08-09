@@ -23,7 +23,6 @@ namespace trivial.Services
 
         private GameModel _game;
 
-
         public GameSocketMiddleware(RequestDelegate next)
         {
             _next = next;
@@ -57,16 +56,6 @@ namespace trivial.Services
                     }
 
                     var response = await ReceiveStringAsync(currentSocket, ct);
-
-                    //if (string.IsNullOrEmpty(response))
-                    //{
-                    //    if (currentSocket.State != WebSocketState.Open)
-                    //    {
-                    //        break;
-                    //    }
-
-                    //    continue;
-                    //}
 
                     if (!string.IsNullOrEmpty(response))
                         ManageResponse(response);
@@ -155,6 +144,11 @@ namespace trivial.Services
 
                 case (EnumGameStage.Start):
                     this._game.Stage = socketRequest.Stage;
+                    if (socketRequest.Data != null)
+                    {
+                        ResultModel result = JsonConvert.DeserializeObject<ResultModel>(socketRequest.Data.ToString());
+                        this._game.Results.Add(result);
+                    }
                     break;
             }
         }
